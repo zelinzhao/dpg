@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="uptasm-louva" basedir="." default="assemble">
+    <property name="dist.dir" location="dist" />
+    <property name="config.dir" location="config" />
+    <property name="lib.dir" location="lib" />
+    <property name="src.dir" location="src" />
+    <property name="bin.dir" location="bin" />
+    <property name="louvadev.loc" location="../DeveloperInterface/louvadev.jar" />
+
+    <fileset id="libraries" dir="${lib.dir}">
+        <include name="*.jar" />
+    </fileset>
+
+    <path id="libraries.path">
+        <fileset refid="libraries"/>
+        <pathelement location="${louvadev.loc}"/>
+    </path>
+
+    <target name="compile">
+        <delete dir="${bin.dir}" />
+        <mkdir dir="${bin.dir}" />
+        <javac srcdir="${src.dir}" destdir="${bin.dir}" classpathref="libraries.path" encoding="utf8" debug="true">
+        </javac>
+        <mkdir dir="${dist.dir}"/>
+        <jar destfile="${dist.dir}/dpg.jar">
+            <fileset dir="${bin.dir}">
+                <exclude name="**/*test*" />
+            </fileset>
+            <fileset dir="${src.dir}">
+                <include name="**/**.gif" />
+                <include name="**/**.properties"/>
+            </fileset>
+            <manifest>
+                <attribute name="Main-Class"
+                    value="org.javelus.dpg.DynamicPatchGenerator"/>
+            </manifest>
+        </jar>
+    </target>
+
+    <target name="clean">
+        <delete dir="${bin.dir}" />
+        <delete dir="${dist.dir}" />
+    </target>
+    <target name="assemble" depends="clean, compile">
+        <mkdir dir="${dist.dir}/lib" />
+        <copy todir="${dist.dir}/lib">
+            <fileset refid="libraries" />
+        </copy>
+        <copy todir="${dist.dir}/lib" file="${louvadev.loc}"></copy>
+        <copy todir="${dist.dir}">
+            <fileset dir="${config.dir}">
+                <include name="run*" />
+                <include name="lcp.bat" />
+            </fileset>
+        </copy>
+        <chmod file="${dist.dir}/run.sh" perm="+x"/>
+        <chmod file="${dist.dir}/run_gui.sh" perm="+x"/>
+    </target>
+</project>
