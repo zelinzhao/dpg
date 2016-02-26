@@ -31,8 +31,9 @@ public class MethodXMLTreeNode extends XMLTreeNode {
     }
 
     public String toString() {
-        return String.format("%s %s <%s>", getAttribute("name"),
-                getAttribute("desc"), getAttribute("codeChanged"));
+        return String.format("%s %s <%s>", getAttribute(org.javelus.DSUSpecConstants.METHOD_NAME_ATT),
+                getAttribute(org.javelus.DSUSpecConstants.METHOD_DESC_ATT),
+                getAttribute(org.javelus.DSUSpecConstants.METHOD_UPDATE_TYPE_ATT));
     }
 
 }

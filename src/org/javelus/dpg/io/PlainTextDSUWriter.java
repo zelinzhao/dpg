@@ -59,8 +59,12 @@ public class PlainTextDSUWriter {
             if (old == null) {
                 // this is a new added class
                 appendAddedClass(pw, klass);
-            } else if (old.isLoaded() && old.isUpdated()) {
-                appendModifiedClass(pw, old);
+            } else if (old.isLoaded()) {
+                if (old.needReloadClass()) {
+                    appendModifiedClass(pw, old);
+                }
+            } else {
+                throw new RuntimeException("Should not reach here.");
             }
         }
 

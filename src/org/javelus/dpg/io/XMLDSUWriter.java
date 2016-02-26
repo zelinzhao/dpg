@@ -38,15 +38,18 @@ import static org.javelus.DSUSpecConstants.METHOD_NAME_ATT;
 import static org.javelus.DSUSpecConstants.METHOD_UPDATE_TYPE_ATT;
 
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.util.Iterator;
 import java.util.List;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 
-import org.apache.xml.serializer.OutputPropertiesFactory;
-import org.apache.xml.serializer.Serializer;
-import org.apache.xml.serializer.SerializerFactory;
 import org.javelus.ClassUpdateType;
 import org.javelus.FieldUpdateType;
 import org.javelus.MethodUpdateType;
@@ -62,21 +65,23 @@ import org.w3c.dom.Element;
  * 
  */
 public class XMLDSUWriter {
+    
+    private static boolean outputNew = false;
+    
     Document document;
 
-    int DEL_CLASS;
-    int MC_CLASS;
-    int BC_CLASS;
-    int STATIC_FIELD_CLASS;
-    int STATIC_METHOD_CLASS;
-    int ALL_STATIC_CLASS;
-    int FIELD_CLASS;
-    int METHOD_CLASS;
-    int ALL_CLASS;
-
-    int MC_METHOD;
-    int BC_METHOD;
-
+    protected void outputDeletedClasses(DSU update, Element classLoaderElement) {
+        List<DSUClass> deletedClass = update.getDeletedClasses();
+        for (DSUClass klass : deletedClass) {
+            if (klass.isLibraryClass()) {
+                throw new RuntimeException("Should not see deleted class here");
+            }
+            if (klass.isLoaded() && klass.isChanged()) {
+                classLoaderElement.appendChild(class2xml(klass, true));
+            }
+        }
+    }
+    
     /**
      * @param update
      * @return an XML element
@@ -88,82 +93,32 @@ public class XMLDSUWriter {
         classLoaderElement.setAttribute(CLASSLOADER_ID_ATT, "");
         updateElement.appendChild(classLoaderElement);
 
-        List<DSUClass> deletedClass = update.getDeletedClasses();
-        for (DSUClass klass : deletedClass) {
-            if (klass.isLoaded() && klass.isUpdated()) {
-                classLoaderElement.appendChild(class2xml(klass));
-            }
-        }
+
 
         Iterator<DSUClass> it = update.getSortedNewClasses();
         while (it.hasNext()) {
             DSUClass klass = it.next();
             DSUClass old = klass.getOldVersion();
-            if (old == null) {
+            if (old == null && outputNew) {
                 // this is a new added class
-                classLoaderElement.appendChild(class2xml(klass));
-            } else if (old.isLoaded() && old.isUpdated()) {
-                classLoaderElement.appendChild(class2xml(old));
+                classLoaderElement.appendChild(class2xml(klass, false));
+            } else if (old.isLoaded() && old.isChanged()) {
+                classLoaderElement.appendChild(class2xml(old, true));
             }
         }
 
         return updateElement;
     }
 
-    private void recordMethod(DSUMethod method) {
-        MethodUpdateType type = method.getMethodUpdateType();
-        switch (type) {
-        case MC:
-            MC_METHOD++;
-            break;
-        case BC:
-            BC_METHOD++;
-            break;
-        default:
-        }
-    }
-
-    private void recordClass(DSUClass klass) {
-        ClassUpdateType type = klass.getChangeType();
-        switch (type) {
-        case MC:
-            MC_CLASS++;
-            break;
-        case BC:
-            BC_CLASS++;
-            break;
-        case S_FIELD:
-            STATIC_FIELD_CLASS++;
-            break;
-        case S_METHOD:
-            STATIC_METHOD_CLASS++;
-            break;
-        case S_ALL:
-            ALL_STATIC_CLASS++;
-            break;
-        case FIELD:
-            FIELD_CLASS++;
-            break;
-        case METHOD:
-            METHOD_CLASS++;
-            break;
-        case ALL:
-            ALL_CLASS++;
-            break;
-        default:
-        }
-    }
-
     /**
      * @param klass
      * @return an XML element
      */
-    private Element class2xml(DSUClass klass) {
+    private Element class2xml(DSUClass klass, boolean isOld) {
         Element classElement = createDSUElement(DSUCLASS_TAG);
 
         classElement.setAttribute(CLASS_NAME_ATT, klass.getName().replace('.', '/'));
-        classElement.setAttribute(CLASS_UPDATE_TYPE_ATT, klass.getChangeType()
-                .toString());
+        classElement.setAttribute(CLASS_UPDATE_TYPE_ATT, klass.getChangeType().toString());
 
         //
         if (klass.needReloadClass()) {
@@ -176,20 +131,67 @@ public class XMLDSUWriter {
             classElement.appendChild(fileElement);
         }
 
-        recordClass(klass);
+        if (isOld) {
+            DSUClass newVersion = klass.getNewVersion();
+            DSUMethod[] methods = klass.getDeclaredMethods();
 
-        DSUMethod[] methods = klass.getDeclaredMethods();
-
-        if (methods != null) {
-            for (DSUMethod m : methods) {
-                classElement.appendChild(method2xml(m));
+            if (methods != null) {
+                for (DSUMethod m : methods) {
+                    classElement.appendChild(method2xml(m, true));
+                }
             }
-        }
 
-        DSUField[] fields = klass.getDeclaredFields();
-        if (fields != null) {
-            for (DSUField f : fields) {
-                classElement.appendChild(field2xml(f));
+            if (newVersion != null) {
+                methods = newVersion.getDeclaredMethods();
+
+                if (methods != null) {
+                    for (DSUMethod m : methods) {                    
+                        Element e = method2xml(m, false);
+                        if (e != null) {
+                            classElement.appendChild(e);
+                        }
+                    }
+                }
+            }
+
+            DSUField[] fields = klass.getDeclaredFields();
+            if (fields != null) {
+                for (DSUField f : fields) {
+                    classElement.appendChild(field2xml(f, true));
+                }
+            }
+
+            if (newVersion != null) {
+                fields = newVersion.getDeclaredFields();
+                if (fields != null) {
+                    for (DSUField f : fields) {
+                        Element e = field2xml(f, false);
+                        if (e != null) {
+                            classElement.appendChild(e);
+                        }
+                    }
+                }
+            }
+        } else { // new added class
+            DSUMethod[] methods = klass.getDeclaredMethods();
+
+            if (methods != null) {
+                for (DSUMethod m : methods) {
+                    Element e = method2xml(m, false);
+                    if (e != null) {
+                        classElement.appendChild(e);
+                    }
+                }
+            }
+
+            DSUField[] fields = klass.getDeclaredFields();
+            if (fields != null) {
+                for (DSUField f : fields) {
+                    Element e = field2xml(f, false);
+                    if (e != null) {
+                        classElement.appendChild(e);
+                    }
+                }
             }
         }
 
@@ -200,26 +202,44 @@ public class XMLDSUWriter {
      * @param method
      * @return an XML element
      */
-    private Element method2xml(DSUMethod method) {
+    private Element method2xml(DSUMethod method, boolean isOld) {
         Element methodElement = createDSUElement(DSUMETHOD_TAG);
 
-        methodElement.setAttribute(METHOD_NAME_ATT, method.getName());
-        methodElement.setAttribute(METHOD_DESC_ATT, method.getDescriptor());
-        methodElement.setAttribute(METHOD_UPDATE_TYPE_ATT, method.getMethodUpdateType().toString());
+        if (isOld) {
+            methodElement.setAttribute(METHOD_NAME_ATT, method.getName());
+            methodElement.setAttribute(METHOD_DESC_ATT, method.getDescriptor());
+            methodElement.setAttribute(METHOD_UPDATE_TYPE_ATT, method.getMethodUpdateType().toString());
+        } else {
+            if (method.hasOldVersion()) {
+                return null;
+            }
+            methodElement.setAttribute(METHOD_NAME_ATT, method.getName());
+            methodElement.setAttribute(METHOD_DESC_ATT, method.getDescriptor());
+            methodElement.setAttribute(METHOD_UPDATE_TYPE_ATT, MethodUpdateType.ADD.toString());
+        }
 
-        recordMethod(method);
         return methodElement;
     }
 
-    private Element field2xml(DSUField field) {
+    private Element field2xml(DSUField field, boolean isOld) {
         Element fieldElement = createDSUElement(DSUFIELD_TAG);
-        fieldElement.setAttribute(FIELD_NAME_ATT, field.getName());
-        fieldElement.setAttribute(FIELD_DESC_ATT, field.getDescriptor());
 
-        if (field.hasNewVersion()) {
-            fieldElement.setAttribute(FIELD_UPDATE_TYPE_ATT, FieldUpdateType.CHANGED.name());
+        if (isOld) {
+            fieldElement.setAttribute(FIELD_NAME_ATT, field.getName());
+            fieldElement.setAttribute(FIELD_DESC_ATT, field.getDescriptor());
+            if (field.hasNewVersion()) {
+                fieldElement.setAttribute(FIELD_UPDATE_TYPE_ATT, FieldUpdateType.NONE.name());
+            } else {
+                fieldElement.setAttribute(FIELD_UPDATE_TYPE_ATT, FieldUpdateType.DEL.name());
+            }
         } else {
-            fieldElement.setAttribute(FIELD_UPDATE_TYPE_ATT, FieldUpdateType.DEL.name());
+            if (field.hasOldVersion()) {
+                return null;
+            }
+
+            fieldElement.setAttribute(FIELD_NAME_ATT, field.getName());
+            fieldElement.setAttribute(FIELD_DESC_ATT, field.getDescriptor());
+            fieldElement.setAttribute(FIELD_UPDATE_TYPE_ATT, FieldUpdateType.ADD.name());
         }
 
         return fieldElement;
@@ -235,8 +255,7 @@ public class XMLDSUWriter {
      */
     public void write(DSU update, OutputStream output) {
         try {
-            final DocumentBuilderFactory builderFactory = org.apache.xerces.jaxp.DocumentBuilderFactoryImpl
-                    .newInstance();
+            final DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
             builderFactory.setNamespaceAware(true);
             builderFactory.setValidating(false);
             DocumentBuilder builder = builderFactory.newDocumentBuilder();
@@ -244,58 +263,19 @@ public class XMLDSUWriter {
             document = builder.newDocument();
             document.appendChild(update2xml(update));
 
-            java.util.Properties xmlProps = OutputPropertiesFactory
-                    .getDefaultMethodProperties("xml");
-            xmlProps.setProperty("indent", "yes");
-            xmlProps.setProperty("standalone", "no");
+            TransformerFactory transformerFactory = TransformerFactory.newInstance();
+            transformerFactory.setAttribute("indent-number", 2);
 
-            Serializer serializer = SerializerFactory.getSerializer(xmlProps);
-            serializer.setOutputStream(output);
-            serializer.asDOMSerializer().serialize(document);
+            Transformer transformer = transformerFactory.newTransformer();
+            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+            //transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
 
+            DOMSource source = new DOMSource(document);
+            StreamResult result = new StreamResult(new OutputStreamWriter(output));
+            transformer.transform(source, result);
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
-
-    public String printHistogram() {
-        StringBuilder sb = new StringBuilder();
-
-        sb.append("Class Changed:\n");
-
-        sb.append("MC:\t\t");
-        sb.append(MC_CLASS);
-
-        sb.append("\nBC:\t\t");
-        sb.append(BC_CLASS);
-
-        sb.append("\n\nSTATIC METHOD:\t\t");
-        sb.append(STATIC_METHOD_CLASS);
-
-        sb.append("\nSTATIC FIELD:\t\t");
-        sb.append(STATIC_FIELD_CLASS);
-
-        sb.append("\nSTATIC BOTH:\t\t");
-        sb.append(ALL_STATIC_CLASS);
-
-        sb.append("\n\nMETHOD:\t\t");
-        sb.append(METHOD_CLASS);
-
-        sb.append("\nFIELD:\t");
-        sb.append(FIELD_CLASS);
-
-        sb.append("\nBOTH:\t\t");
-        sb.append(ALL_CLASS);
-
-        sb.append("\n\nMethod Changed:\n");
-        sb.append("MC:\t\t");
-        sb.append(MC_METHOD);
-
-        sb.append("\nBC:\t\t");
-        sb.append(BC_METHOD);
-        sb.append("\n");
-
-        return sb.toString();
     }
 
     public static void main(String[] args) {

@@ -28,14 +28,13 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
+import org.javelus.dpg.DynamicPatchGenerator;
+import org.javelus.dpg.model.DSUClass;
+import org.javelus.dpg.model.DSUClassStore;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
-
-import org.javelus.dpg.DynamicPatchGenerator;
-import org.javelus.dpg.model.DSUClass;
-import org.javelus.dpg.model.DSUClassStore;
 
 /**
  * @author tiger
@@ -127,7 +126,6 @@ public class TransformerGenerator implements TransformerConstants {
         return transformerClass;
     }
 
-    @SuppressWarnings("unchecked")
     void addMethodNode(MethodNode mn) {
         transformers.methods.add(mn);
     }

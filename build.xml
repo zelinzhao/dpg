@@ -5,7 +5,7 @@
     <property name="lib.dir" location="lib" />
     <property name="src.dir" location="src" />
     <property name="bin.dir" location="bin" />
-    <property name="louvadev.loc" location="../DeveloperInterface/louvadev.jar" />
+    <property name="devlib.loc" location="../developer-interface/developer-interface.jar" />
 
     <fileset id="libraries" dir="${lib.dir}">
         <include name="*.jar" />
@@ -13,7 +13,7 @@
 
     <path id="libraries.path">
         <fileset refid="libraries"/>
-        <pathelement location="${louvadev.loc}"/>
+        <pathelement location="${devlib.loc}"/>
     </path>
 
     <target name="compile">
@@ -46,7 +46,7 @@
         <copy todir="${dist.dir}/lib">
             <fileset refid="libraries" />
         </copy>
-        <copy todir="${dist.dir}/lib" file="${louvadev.loc}"></copy>
+        <copy todir="${dist.dir}/lib" file="${devlib.loc}"></copy>
         <copy todir="${dist.dir}">
             <fileset dir="${config.dir}">
                 <include name="run*" />

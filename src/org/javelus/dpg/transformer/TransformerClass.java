@@ -34,7 +34,7 @@ import org.objectweb.asm.tree.MethodNode;
  * @author tiger
  * 
  */
-public class TransformerClass implements ClassVisitor, Opcodes,
+public class TransformerClass extends ClassVisitor implements Opcodes,
         TransformerConstants {
 
     final TransformerGenerator generator;
@@ -52,11 +52,12 @@ public class TransformerClass implements ClassVisitor, Opcodes,
      * @param generator
      */
     public TransformerClass(TransformerGenerator generator) {
+        super(Opcodes.ASM5);
         this.generator = generator;
     }
 
     public TransformerClass(TransformerGenerator generator, String className) {
-
+        super(Opcodes.ASM5);
         this.generator = generator;
         this.className = className;
     }

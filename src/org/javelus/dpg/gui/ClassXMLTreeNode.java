@@ -31,8 +31,8 @@ public class ClassXMLTreeNode extends XMLTreeNode {
     }
 
     public String toString() {
-        return String.format("%s <%s>", getAttribute("name"),
-                getAttribute("classChanged"));
+        return String.format("%s <%s>", getAttribute(org.javelus.DSUSpecConstants.CLASS_NAME_ATT),
+                getAttribute(org.javelus.DSUSpecConstants.CLASS_UPDATE_TYPE_ATT));
 
     }
 

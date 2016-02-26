@@ -38,23 +38,12 @@ import org.javelus.dpg.io.Utils;
  */
 public class DSUMethod extends DSUMember<DSUMethod> implements Opcodes {
 
-    /**
-     * @DILEPIS 类实例初始化方法的名称
-     */
     public static final String STANDARD_OBJECT_INITIALIZE = "<init>";
-    /**
-     * @DILEPIS 类初始化方法的名称
-     */
+
     public static final String STANDARD_CLASS_INITIALIZE = "<clinit>";
 
-    /**
-     * @DILEPIS 该方法对应的方法节点，参见ASM包
-     */
     private MethodNode methodNode;
 
-    /**
-     * @DILEPIS 该方法的更新类型
-     */
     private MethodUpdateType updateType = MethodUpdateType.NONE;
 
     public DSUMethod(DSUClass declaredClass, MethodNode method) {
@@ -63,7 +52,6 @@ public class DSUMethod extends DSUMember<DSUMethod> implements Opcodes {
     }
 
     /**
-     * @DILEPIS 该方法是否是一个实例方法
      * @return true if it is a instance method
      */
     public boolean isInTIB() {
@@ -78,6 +66,10 @@ public class DSUMethod extends DSUMember<DSUMethod> implements Opcodes {
         return name.equals(STANDARD_CLASS_INITIALIZE);
     }
 
+    public int getAccess() {
+        return methodNode.access;
+    }
+    
     /**
      * maybe useless
      * 
@@ -110,19 +102,16 @@ public class DSUMethod extends DSUMember<DSUMethod> implements Opcodes {
 
     @Override
     public String getAccessFlagsVerbose() {
-        // TODO Auto-generated method stub
         return Utils.accessToString(methodNode.access, Utils.METHOD);
     }
 
     @Override
     public String getDescriptor() {
-        // TODO Auto-generated method stub
         return methodNode.desc;
     }
 
     @Override
     public String getName() {
-        // TODO Auto-generated method stub
         return methodNode.name;
     }
 

@@ -22,8 +22,6 @@
  */
 package org.javelus.dpg;
 
-import gnu.getopt.Getopt;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.HashMap;
@@ -33,9 +31,9 @@ import java.util.Map;
 import org.javelus.dpg.gui.MainFrame;
 import org.javelus.dpg.io.PlainTextDSUWriter;
 import org.javelus.dpg.io.XMLDSUWriter;
+import org.javelus.dpg.model.DSU;
 import org.javelus.dpg.model.DSUClass;
 import org.javelus.dpg.model.DSUClassStore;
-import org.javelus.dpg.model.DSU;
 import org.javelus.dpg.transformer.TemplateClassGenerator;
 import org.javelus.dpg.transformer.TransformerGenerator;
 import org.objectweb.asm.tree.ClassNode;
@@ -51,8 +49,8 @@ public class DynamicPatchGenerator {
     /**
      * output for meta file
      */
-    public static String DEFAULT_DIRECTORY = "./";
-    public static String OUTPUT_DIRECTORY = DEFAULT_DIRECTORY;
+    public static File DEFAULT_DIRECTORY = new File(".");
+    public static File OUTPUT_DIRECTORY = DEFAULT_DIRECTORY;
 
     private static String OLD_CP;
 
@@ -62,8 +60,12 @@ public class DynamicPatchGenerator {
     private static String transformerName = "JavelusTransformers";
 
     private static boolean generateDynamicPatch = true;
+    public static String outputMode = "all";
+
     private static boolean generateTempalteClasses = true;
     private static boolean openGUI = false;
+    
+    
 
     /**
      * @param args
@@ -77,7 +79,7 @@ public class DynamicPatchGenerator {
             return;
         }
 
-        File outputDir = new File(OUTPUT_DIRECTORY);
+        File outputDir = OUTPUT_DIRECTORY;
 
         outputDir.mkdirs();
 
@@ -86,13 +88,23 @@ public class DynamicPatchGenerator {
         	DSU update = createUpdate(OLD_CP, NEW_CP);
             update.computeUpdateInformation();
 
-            PlainTextDSUWriter writer = new PlainTextDSUWriter();
-            File dsuFile = new File(outputDir, "javelus.dsu");
-            writer.write(update, new FileOutputStream(dsuFile));
-
-            XMLDSUWriter xmlWriter = new XMLDSUWriter();
-            File xmlFile = new File(outputDir, "javelus.xml");
-            xmlWriter.write(update, new FileOutputStream(xmlFile));
+            if (outputMode.equals("xml")) {
+                XMLDSUWriter xmlWriter = new XMLDSUWriter();
+                File xmlFile = new File(outputDir, "javelus.xml");
+                xmlWriter.write(update, new FileOutputStream(xmlFile));
+            } else if (outputMode.equals("plain")) {
+                PlainTextDSUWriter writer = new PlainTextDSUWriter();
+                File dsuFile = new File(outputDir, "javelus.dsu");
+                writer.write(update, new FileOutputStream(dsuFile));
+            } else {
+                PlainTextDSUWriter writer = new PlainTextDSUWriter();
+                File dsuFile = new File(outputDir, "javelus.dsu");
+                writer.write(update, new FileOutputStream(dsuFile));
+                
+                XMLDSUWriter xmlWriter = new XMLDSUWriter();
+                File xmlFile = new File(outputDir, "javelus.xml");
+                xmlWriter.write(update, new FileOutputStream(xmlFile));
+            }
 
             if (generateTempalteClasses) {
                 TemplateClassGenerator.generate(update, OUTPUT_DIRECTORY);
@@ -175,64 +187,33 @@ public class DynamicPatchGenerator {
      * @param args
      */
     private static void processCommandLine(String[] args) {
-        Getopt opt = new Getopt("UpdatePreparationTool", args,
-                ":t:m:d:o:n:uhbg");
-        opt.setOpterr(false);
-        int c;
-        while ((c = opt.getopt()) != -1) {
-            switch (c) {
-            case 'h': {
+        int i = 0;
+        final int length = args.length;
+        while (i < length) {
+            String arg = args[i++];
+            if (arg.equals("-h")) {
                 printUsage();
                 System.exit(0);
-            }
-            case 'o': {
-                OLD_CP = opt.getOptarg();
-                break;
-            }
-            case 'n': {
-                NEW_CP = opt.getOptarg();
-                break;
-            }
-            case 'd': {
-                OUTPUT_DIRECTORY = opt.getOptarg();
-                if (!OUTPUT_DIRECTORY.endsWith("/")) {
-                    OUTPUT_DIRECTORY += "/";
-                }
-                break;
-            }
-            case 'b': {
-                generateDynamicPatch = false;
-                break;
-            }
-            case 'g': {
+            } else if (arg.equals("-o")) {
+                OLD_CP = args[i++];
+            } else if (arg.equals("-n")) {
+                NEW_CP = args[i++];
+            } else if (arg.equals("-d")) {
+                OUTPUT_DIRECTORY = new File(args[i++]);
+            } else if (arg.equals("-t")) {
+                transformerCP = args[i++];
+            } else if (arg.equals("-g")) {
                 generateTempalteClasses = false;
-                break;
-            }
-            case 't': {
-                transformerCP = opt.getOptarg();
-                break;
-            }
-            case 'u': {
+            } else if (arg.equals("-u")) {
                 openGUI = true;
-                break;
-            }
-            case 'm': {
-                transformerName = opt.getOptarg();
-                break;
-            }
-            case ':': {
-                System.out.println("UpdatePreparationTool: Missing Argument, Option "
-                                + (char) opt.getOptopt());
+            } else if (arg.equals("-s")) {
+                outputMode = args[i++];
+            } else if (arg.equals("-m")) {
+                transformerName = args[i++];
+            } else {
+                System.out.println("Unknown options or arguments: " + arg);
                 printUsage();
                 System.exit(1);
-            }
-            case '?': {
-                System.out.println("UpdatePreparationTool: Invalid Option "
-                        + (char) opt.getOptopt());
-                printUsage();
-                System.exit(1);
-            }
-            default:
             }
         }
 
@@ -264,8 +245,9 @@ public class DynamicPatchGenerator {
                 + "\t-n new-file\n"
                 + "\t-d output directory\n"
                 + "\t-b disable generating javelus.dsu\n"
-                + "\t-g generate template classes\n"
-                + "\t-t transformer class path\n" 
+                + "\t-g disable generate template classes\n"
+                + "\t-t transformer class path\n"
+                + "\t-s output mode: {plain|xml|all}\n" 
                 + "\t-u gui version\n");
     }
 }

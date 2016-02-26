@@ -23,7 +23,7 @@
 package org.javelus.dpg.model;
 
 import org.objectweb.asm.tree.FieldNode;
-
+import org.javelus.FieldUpdateType;
 import org.javelus.dpg.io.Utils;
 
 /**
@@ -33,7 +33,7 @@ import org.javelus.dpg.io.Utils;
 public class DSUField extends DSUMember<DSUField> {
 
     private FieldNode fieldNode;
-
+    private FieldUpdateType updateType = FieldUpdateType.NONE;
     /**
      * ClassTypeCode 'L' ArrayTypeCode '[' VoidTypeCode 'V' BooleanTypeCode 'Z'
      * ByteTypeCode 'B' ShortTypeCode 'S' IntTypeCode 'I' LongTypeCode 'J'
@@ -65,24 +65,33 @@ public class DSUField extends DSUMember<DSUField> {
 
     @Override
     public String getAccessFlagsVerbose() {
-        // TODO Auto-generated method stub
         return Utils.accessToString(fieldNode.access, Utils.FIELD);
     }
 
     @Override
     public String getDescriptor() {
-        // TODO Auto-generated method stub
         return fieldNode.desc;
     }
 
     @Override
     public String getName() {
-        // TODO Auto-generated method stub
         return fieldNode.name;
     }
 
     public FieldNode getFieldNode() {
         return fieldNode;
+    }
+
+    public int getAccess() {
+        return fieldNode.access;
+    }
+    
+    public FieldUpdateType getUpdateType() {
+        return this.updateType;
+    }
+    
+    public void setFieldUpdateType(FieldUpdateType type) {
+        this.updateType = type;
     }
 
 }

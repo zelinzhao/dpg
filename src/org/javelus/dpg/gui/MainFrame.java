@@ -47,7 +47,6 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
 import javax.swing.ScrollPaneConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -72,8 +71,6 @@ public class MainFrame extends JFrame implements ActionListener {
 
     // private JTextField oldPath;
     // private JTextField newPath;
-
-    private JTextArea outputArea;
 
     private XMLTreePanel outputPanel;
     private JMenuItem removePath;
@@ -142,41 +139,18 @@ public class MainFrame extends JFrame implements ActionListener {
         c.weighty = 1;
         contentPane.add(jsp, c);
 
-        // newPath = createPathText();
-        // c = createConstraints(0,1,1);
-        // c.weightx = 1;
-        // contentPane.add(newPath, c);
-
         outputPanel = new XMLTreePanel();
-        // JScrollPane jsp = new JScrollPane(outputPanel);
-        //
-        // jsp.setPreferredSize(new Dimension(400,400));
-        // jsp.setAutoscrolls(true);
-        // jsp.setHorizontalScrollBarPolicy(
-        // ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        // jsp.setVerticalScrollBarPolicy(
-        // ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
         c = createConstraints(0, 2, 2);
         c.weightx = 1;
-        c.weighty = 1;
+        c.weighty = 5;
         contentPane.add(/* jsp */outputPanel, c);
 
-        outputArea = new JTextArea();
-        outputArea.setLineWrap(true);
-        jsp = new JScrollPane(outputArea);
-        jsp.setPreferredSize(new Dimension(400, 200));
-        jsp.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
-        c = createConstraints(0, 3, 2);
-        c.weightx = 1;
-        c.weighty = 1;
-        contentPane.add(jsp, c);
-
         runAll = createButton("Run All");
-        c = createConstraints(0, 4, 1);
+        c = createConstraints(0, 3, 1);
         contentPane.add(runAll, c);
 
         justRun = createButton("Run Analysis");
-        c = createConstraints(1, 4, 1);
+        c = createConstraints(1, 3, 1);
         contentPane.add(justRun, c);
 
         // this.pack();
@@ -215,8 +189,7 @@ public class MainFrame extends JFrame implements ActionListener {
     private void setDocument(String text) {
         Document document = null;
         try {
-            DocumentBuilderFactory dbFactory = org.apache.xerces.jaxp.DocumentBuilderFactoryImpl
-                    .newInstance();
+            DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
             DocumentBuilder builder = dbFactory.newDocumentBuilder();
             document = builder.parse(new ByteArrayInputStream(text.getBytes()));
             document.normalize();
@@ -226,10 +199,6 @@ public class MainFrame extends JFrame implements ActionListener {
         }
 
         outputPanel.setDocument(document);
-    }
-
-    private void setInfo(String text) {
-        outputArea.setText(text);
     }
 
     static String getPathList(JList list) {
@@ -284,7 +253,7 @@ public class MainFrame extends JFrame implements ActionListener {
                     writer.write(update, output);
                     String oldText = output.toString();
                     setDocument(oldText);
-                    setInfo(writer.printHistogram());
+                    //setInfo();
 
                     PlainTextDSUWriter hotspot = new PlainTextDSUWriter();
                     output.reset();

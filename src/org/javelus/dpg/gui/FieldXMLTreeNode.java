@@ -31,8 +31,9 @@ public class FieldXMLTreeNode extends XMLTreeNode {
     }
 
     public String toString() {
-        return String.format("%s %s <%s>", getAttribute("name"),
-                getAttribute("desc"), element.getAttribute("memberChanged"));
+        return String.format("%s %s <%s>", getAttribute(org.javelus.DSUSpecConstants.FIELD_NAME_ATT),
+                getAttribute(org.javelus.DSUSpecConstants.FIELD_DESC_ATT),
+                getAttribute(org.javelus.DSUSpecConstants.FIELD_UPDATE_TYPE_ATT));
     }
 
 }

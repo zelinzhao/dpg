@@ -28,7 +28,6 @@ public class ClassLoaderXMLTreeNode extends XMLTreeNode {
 
     public ClassLoaderXMLTreeNode(Element element) {
         super(element);
-        // TODO Auto-generated constructor stub
     }
 
 }

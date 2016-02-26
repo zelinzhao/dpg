@@ -29,6 +29,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.javelus.ClassUpdateType;
 import org.javelus.dpg.comparator.DSUComparator;
@@ -50,11 +51,6 @@ public class DSU {
      * runtime)
      */
     private Map<String, DSUClass> redefinedClasses = new HashMap<String, DSUClass>();
-
-    /**
-     * class in ClassUpdateType.BC
-     */
-    private List<DSUClass> swappedClasses = new ArrayList<DSUClass>();
 
     /**
      * class in ClassUpdateType.BC
@@ -108,7 +104,7 @@ public class DSU {
      * @param oldClass
      * @param newClass
      */
-    protected void initDSUClass(DSUClass oldClass, DSUClass newClass) {
+    protected void match(DSUClass oldClass, DSUClass newClass) {
         oldClass.setNewVersion(newClass);
         newClass.setOldVersion(oldClass);
     }
@@ -147,8 +143,13 @@ public class DSU {
             if (cls.hasOldVersion()) {
                 continue;
             }
+            if (cls.isLibraryClass()) {
+                continue;
+            }
+            if (!cls.isLoaded()) {
+                continue;
+            }
             cls.updateChangedType(ClassUpdateType.ADD);
-            // System.out.println("New Added Class:" + cls.getChangeType());
             addedClasses.add(cls);
         }
     }
@@ -162,22 +163,15 @@ public class DSU {
             DSUClass newClass = findMappedNewDSUClass(name);
             if (newClass != null) {
                 if (newClass.isLoaded()) {
-                    initDSUClass(oldClass, newClass);
+                    match(oldClass, newClass);
 
                     DSUComparator.compareClassStructure(oldClass, newClass);
-                    if (DSUComparator.shouldRedefineClass(oldClass)) {
+                    if (oldClass.needRedefineClass()) {
                         addRedefinedClass(name, oldClass);
                     }
-
-                    // compare method code
-                    DSUComparator.compareMethodBody(oldClass, newClass);
-                    if (DSUComparator.shouldSwapClass(oldClass, newClass)) {
-                        swappedClasses.add(oldClass);
-                    }
-
                 } else {
-                    oldClass.updateChangedType(ClassUpdateType.DEL);
-                    deletedClasses.add(oldClass);
+                    System.err.format("Missing new class node [%s].\n", newClass.getName());
+                    throw new RuntimeException("Sanity check, only loaded class can be compared.");
                 }
             } else {
                 oldClass.updateChangedType(ClassUpdateType.DEL);
@@ -185,6 +179,7 @@ public class DSU {
             }
         } else {
             System.err.format("Missing old class node [%s].\n", oldClass.getName());
+            throw new RuntimeException("Sanity check, only loaded class can be compared.");
         }
 
     }
@@ -194,7 +189,7 @@ public class DSU {
 
         while (allClassIterator.hasNext()) {
             DSUClass cls = allClassIterator.next();
-            if (cls.isLoaded()) {
+            if (cls.isLoaded() && !cls.isLibraryClass()) {
                 secondPass(cls);
             }
         }
@@ -249,8 +244,6 @@ public class DSU {
     /**
      */
     public void computeUpdateInformation() {
-        System.out.println("OldPath:" + oldStore.getPathString());
-        System.out.println("NewPath:" + newStore.getPathString());
         firstPass();
         secondPass();
     }
@@ -309,25 +302,53 @@ public class DSU {
         LinkedList<DSUClass> clist = new LinkedList<DSUClass>();
         LinkedList<DSUClass> ilist = new LinkedList<DSUClass>();
         HashSet<DSUClass> imark = new HashSet<DSUClass>(100);
+        Set<DSUClass> hasAncestor = new HashSet<DSUClass>(); 
         while (iterator.hasNext()) {
             DSUClass clazz = iterator.next();
 
-            if (!clazz.isLoaded()) {
+            // ignore unloaded and library classes
+            if (!clazz.isLoaded() || clazz.isLibraryClass()) {
                 continue;
             }
             // all class directly inherit from java.lang.Object
-            if (clazz.isInterface() && clazz.getDeclaredInterfaces().length == 0) {
-                interfacesInTopologicalOrder(clazz, ilist, imark);
+            if (clazz.isInterface()) {
+                // an interface is root interface if it is has no loaded super application interface
+                boolean noApplicationSuperInterface = true;
+                for (DSUClass itfc : clazz.getDeclaredInterfaces()) {
+                    if (itfc.isLoaded() && !itfc.isLibraryClass()) {
+                        noApplicationSuperInterface = false;
+                    }
+                }
+                if (noApplicationSuperInterface) {
+                    interfacesInTopologicalOrder(clazz, ilist, imark);
+                }
             } else if (clazz.isEnum()) {
-                classesInTopologicalOrder(clazz, clist);
-            } else if (clazz.getSuperClass().isLibraryClass()/* == DSUBootstrapClassStore.java_lang_Object_class*/) {
+                // enum is always root
                 classesInTopologicalOrder(clazz, clist);
             } else {
-                
+                DSUClass superClass = clazz.getSuperClass();
+                if (!superClass.isLoaded()) {
+                    classesInTopologicalOrder(clazz, clist);
+                } else if (superClass.isLibraryClass()) {
+                    classesInTopologicalOrder(clazz, clist);
+                } else if (clazz.isLoaded()) {
+                    // has loaded application super class
+                    hasAncestor.add(clazz);
+                } else {
+                    // ignore unloaded application class
+                }
             }
         }
 
         ilist.addAll(clist);
+
+        Set<DSUClass> results = new HashSet<DSUClass>(); 
+        results.addAll(ilist);
+        for (DSUClass ha : hasAncestor) {
+            if (!results.contains(ha)) {
+                throw new RuntimeException("Sanity check failed");
+            }
+        }
 
         return ilist.iterator();
     }
