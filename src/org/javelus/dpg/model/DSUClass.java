@@ -29,6 +29,7 @@ import java.util.List;
 
 import org.javelus.ClassUpdateType;
 import org.javelus.dpg.comparator.DSUComparator;
+import org.javelus.dpg.io.Utils;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.InnerClassNode;
@@ -532,6 +533,10 @@ public class DSUClass extends DSUVersionedElement<DSUClass> {
         return null;
     }
 
+    public String getAccessFlagsVerbose() {
+        return Utils.accessToString(classNode.access, Utils.CLASS);
+    }
+    
     /**
      * used only for calcIndirect to decide offset
      * 

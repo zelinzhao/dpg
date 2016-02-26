@@ -59,10 +59,10 @@ public class DynamicPatchGenerator {
     private static String transformerCP = null;
     private static String transformerName = "JavelusTransformers";
 
-    private static boolean generateDynamicPatch = true;
-    public static String outputMode = "all";
+    private static boolean generateDynamicPatch = false;
+    public static boolean outputXML = false;
 
-    private static boolean generateTempalteClasses = true;
+    private static boolean generateTempalteClasses = false;
     private static boolean openGUI = false;
     
     
@@ -88,22 +88,14 @@ public class DynamicPatchGenerator {
         	DSU update = createUpdate(OLD_CP, NEW_CP);
             update.computeUpdateInformation();
 
-            if (outputMode.equals("xml")) {
+            if (outputXML) {
                 XMLDSUWriter xmlWriter = new XMLDSUWriter();
                 File xmlFile = new File(outputDir, "javelus.xml");
                 xmlWriter.write(update, new FileOutputStream(xmlFile));
-            } else if (outputMode.equals("plain")) {
-                PlainTextDSUWriter writer = new PlainTextDSUWriter();
-                File dsuFile = new File(outputDir, "javelus.dsu");
-                writer.write(update, new FileOutputStream(dsuFile));
             } else {
                 PlainTextDSUWriter writer = new PlainTextDSUWriter();
                 File dsuFile = new File(outputDir, "javelus.dsu");
                 writer.write(update, new FileOutputStream(dsuFile));
-                
-                XMLDSUWriter xmlWriter = new XMLDSUWriter();
-                File xmlFile = new File(outputDir, "javelus.xml");
-                xmlWriter.write(update, new FileOutputStream(xmlFile));
             }
 
             if (generateTempalteClasses) {
@@ -203,11 +195,11 @@ public class DynamicPatchGenerator {
             } else if (arg.equals("-t")) {
                 transformerCP = args[i++];
             } else if (arg.equals("-g")) {
-                generateTempalteClasses = false;
+                generateTempalteClasses = true;
             } else if (arg.equals("-u")) {
                 openGUI = true;
-            } else if (arg.equals("-s")) {
-                outputMode = args[i++];
+            } else if (arg.equals("-x")) {
+                outputXML = true;
             } else if (arg.equals("-m")) {
                 transformerName = args[i++];
             } else {
@@ -221,16 +213,12 @@ public class DynamicPatchGenerator {
             return;
         }
 
-        if ((OLD_CP == null || NEW_CP == null)) {
-            if (transformerCP == null) {
-                printUsage();
-                System.exit(1);
-            } else {
-                generateDynamicPatch = false;
-                generateTempalteClasses = false;
-            }
+        if (OLD_CP != null && NEW_CP != null) {
+            generateDynamicPatch = true;
+        } else if (transformerCP == null) {
+            printUsage();
+            System.exit(1);
         }
-
     }
 
     /**
@@ -244,10 +232,9 @@ public class DynamicPatchGenerator {
                 + "\t-o old-file\n" 
                 + "\t-n new-file\n"
                 + "\t-d output directory\n"
-                + "\t-b disable generating javelus.dsu\n"
                 + "\t-g disable generate template classes\n"
                 + "\t-t transformer class path\n"
-                + "\t-s output mode: {plain|xml|all}\n" 
+                + "\t-x output xml\n" 
                 + "\t-u gui version\n");
     }
 }

@@ -110,7 +110,10 @@ public class DSUComparator {
 
         if (!compareAccess(oldNode.access, newNode.access)) {
             oldClass.updateChangedType(ClassUpdateType.CC);
-            System.err.format("ClassNodeComparator: access flags changed of [%s,%s]\n", oldNode.name, newNode.name);
+            System.err.format("ClassNodeComparator: access flags changed of %s, old access is %s, new access is %s\n",
+                    oldNode.name,
+                    oldClass.getAccessFlagsVerbose(), 
+                    newClass.getAccessFlagsVerbose());
         } 
 
     }
@@ -142,11 +145,11 @@ public class DSUComparator {
     }
     
     static boolean compareAccess(int a1, int a2) {
-        if (DynamicPatchGenerator.outputMode.equals("xml")) {
-            return a1 == a2;
+        if (DynamicPatchGenerator.outputXML) {
+            return (Modifier.isStatic(a1) && Modifier.isStatic(a2))
+                    || (!Modifier.isStatic(a1) && !Modifier.isStatic(a2));
         }
-        return (Modifier.isStatic(a1) && Modifier.isStatic(a2))
-                || (!Modifier.isStatic(a1) && !Modifier.isStatic(a2));
+        return a1 == a2;
     }
 
 

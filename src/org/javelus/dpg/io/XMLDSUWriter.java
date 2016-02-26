@@ -99,9 +99,11 @@ public class XMLDSUWriter {
         while (it.hasNext()) {
             DSUClass klass = it.next();
             DSUClass old = klass.getOldVersion();
-            if (old == null && outputNew) {
-                // this is a new added class
-                classLoaderElement.appendChild(class2xml(klass, false));
+            if (old == null) {
+                if (outputNew) {
+                    // this is a new added class
+                    classLoaderElement.appendChild(class2xml(klass, false));
+                }
             } else if (old.isLoaded() && old.isChanged()) {
                 classLoaderElement.appendChild(class2xml(old, true));
             }

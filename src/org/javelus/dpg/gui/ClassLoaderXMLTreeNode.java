@@ -29,5 +29,9 @@ public class ClassLoaderXMLTreeNode extends XMLTreeNode {
     public ClassLoaderXMLTreeNode(Element element) {
         super(element);
     }
+    
+    public String toString() {
+        return String.format("classloader [%d]", getElement().getChildNodes().getLength());
+    }
 
 }

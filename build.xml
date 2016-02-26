@@ -1,10 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project name="uptasm-louva" basedir="." default="assemble">
+<project name="dpg" basedir="." default="assemble">
     <property name="dist.dir" location="dist" />
-    <property name="config.dir" location="config" />
+    <property name="dist.name" value="${ant.project.name}.jar" />
+    <property name="dist.loc" location="${dist.dir}/${dist.name}" />
+	
+	<property name="config.dir" location="config" />
     <property name="lib.dir" location="lib" />
     <property name="src.dir" location="src" />
     <property name="bin.dir" location="bin" />
+	
     <property name="devlib.loc" location="../developer-interface/developer-interface.jar" />
 
     <fileset id="libraries" dir="${lib.dir}">
@@ -22,7 +26,7 @@
         <javac srcdir="${src.dir}" destdir="${bin.dir}" classpathref="libraries.path" encoding="utf8" debug="true">
         </javac>
         <mkdir dir="${dist.dir}"/>
-        <jar destfile="${dist.dir}/dpg.jar">
+        <jar destfile="${dist.loc}">
             <fileset dir="${bin.dir}">
                 <exclude name="**/*test*" />
             </fileset>
