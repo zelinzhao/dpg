@@ -192,6 +192,13 @@ public class DynamicPatchGenerator {
                 NEW_CP = args[i++];
             } else if (arg.equals("-d")) {
                 OUTPUT_DIRECTORY = new File(args[i++]);
+                if (OUTPUT_DIRECTORY.exists()) {
+                    if (!OUTPUT_DIRECTORY.isDirectory()) {
+                        throw new RuntimeException("Output directory " + OUTPUT_DIRECTORY + " is not a valid directory.");
+                    }
+                } else {
+                    OUTPUT_DIRECTORY.mkdir();
+                }
             } else if (arg.equals("-t")) {
                 transformerCP = args[i++];
             } else if (arg.equals("-g")) {
