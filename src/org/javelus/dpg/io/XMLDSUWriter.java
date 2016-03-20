@@ -31,10 +31,12 @@ import static org.javelus.DSUSpecConstants.DSUFIELD_TAG;
 import static org.javelus.DSUSpecConstants.DSUMETHOD_TAG;
 import static org.javelus.DSUSpecConstants.FIELD_DESC_ATT;
 import static org.javelus.DSUSpecConstants.FIELD_NAME_ATT;
+import static org.javelus.DSUSpecConstants.FIELD_STATIC_ATT;
 import static org.javelus.DSUSpecConstants.FIELD_UPDATE_TYPE_ATT;
 import static org.javelus.DSUSpecConstants.FILE_TAG;
 import static org.javelus.DSUSpecConstants.METHOD_DESC_ATT;
 import static org.javelus.DSUSpecConstants.METHOD_NAME_ATT;
+import static org.javelus.DSUSpecConstants.METHOD_STATIC_ATT;
 import static org.javelus.DSUSpecConstants.METHOD_UPDATE_TYPE_ATT;
 
 import java.io.OutputStream;
@@ -147,7 +149,7 @@ public class XMLDSUWriter {
                 methods = newVersion.getDeclaredMethods();
 
                 if (methods != null) {
-                    for (DSUMethod m : methods) {                    
+                    for (DSUMethod m : methods) {
                         Element e = method2xml(m, false);
                         if (e != null) {
                             classElement.appendChild(e);
@@ -211,6 +213,8 @@ public class XMLDSUWriter {
             methodElement.setAttribute(METHOD_NAME_ATT, method.getName());
             methodElement.setAttribute(METHOD_DESC_ATT, method.getDescriptor());
             methodElement.setAttribute(METHOD_UPDATE_TYPE_ATT, method.getMethodUpdateType().toString());
+            methodElement.setAttribute(METHOD_STATIC_ATT, String.valueOf(method.isStatic()));
+
         } else {
             if (method.hasOldVersion()) {
                 return null;
@@ -218,6 +222,7 @@ public class XMLDSUWriter {
             methodElement.setAttribute(METHOD_NAME_ATT, method.getName());
             methodElement.setAttribute(METHOD_DESC_ATT, method.getDescriptor());
             methodElement.setAttribute(METHOD_UPDATE_TYPE_ATT, MethodUpdateType.ADD.toString());
+            methodElement.setAttribute(METHOD_STATIC_ATT, String.valueOf(method.isStatic()));
         }
 
         return methodElement;
@@ -234,6 +239,7 @@ public class XMLDSUWriter {
             } else {
                 fieldElement.setAttribute(FIELD_UPDATE_TYPE_ATT, FieldUpdateType.DEL.name());
             }
+            fieldElement.setAttribute(FIELD_STATIC_ATT, String.valueOf(field.isStatic()));
         } else {
             if (field.hasOldVersion()) {
                 return null;
@@ -242,6 +248,7 @@ public class XMLDSUWriter {
             fieldElement.setAttribute(FIELD_NAME_ATT, field.getName());
             fieldElement.setAttribute(FIELD_DESC_ATT, field.getDescriptor());
             fieldElement.setAttribute(FIELD_UPDATE_TYPE_ATT, FieldUpdateType.ADD.name());
+            fieldElement.setAttribute(FIELD_STATIC_ATT, String.valueOf(field.isStatic()));
         }
 
         return fieldElement;
