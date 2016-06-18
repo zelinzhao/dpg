@@ -322,7 +322,7 @@ public class DSU {
                 if (noApplicationSuperInterface) {
                     interfacesInTopologicalOrder(clazz, ilist, imark);
                 }
-            } else if (clazz.isEnum()) {
+            } else if (clazz.isEnum() && clazz.getSuperClass().getName().equals("java.lang.Enum")) {
                 // enum is always root
                 classesInTopologicalOrder(clazz, clist);
             } else {
@@ -344,6 +344,9 @@ public class DSU {
 
         Set<DSUClass> results = new HashSet<DSUClass>(); 
         results.addAll(ilist);
+        if (results.size() != ilist.size()) {
+            throw new RuntimeException("duplicated items in the list");
+        }
         for (DSUClass ha : hasAncestor) {
             if (!results.contains(ha)) {
                 throw new RuntimeException("Sanity check failed");
